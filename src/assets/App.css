@@ -1,0 +1,76 @@
+.add-recipe-form {
+  display: flex;
+  flex-direction: column;
+  max-width: 500px;
+  margin: 0 auto;
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #f9f9f9;
+}
+.add-recipe-form h2 {
+  margin-bottom: 20px;
+}
+.add-recipe-form .form-group {
+  margin-bottom: 20px;
+}
+.add-recipe-form .form-group label {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+.add-recipe-form .form-group input[type=text],
+.add-recipe-form .form-group textarea,
+.add-recipe-form .form-group select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+.add-recipe-form .form-group textarea {
+  resize: vertical;
+}
+.add-recipe-form .form-group select[multiple] {
+  height: 100px;
+}
+.add-recipe-form .cook-time {
+  display: flex;
+  gap: 1rem;
+  width: 100%;
+}
+.add-recipe-form .cook-time input {
+  width: 100%;
+}
+.add-recipe-form .checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+}
+.add-recipe-form .checkbox-group label {
+  display: flex;
+  align-items: center;
+  margin-right: 1rem;
+}
+.add-recipe-form .checkbox-group label input[type=checkbox] {
+  margin-right: 0.5rem;
+}
+.add-recipe-form .input-group {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+.add-recipe-form .input-group input[type=text] {
+  flex: 1;
+  margin-right: 0.5rem;
+}
+.add-recipe-form .input-group button {
+  flex-shrink: 0;
+  margin-left: 0.5rem;
+}
+.add-recipe-form button[type=submit] {
+  padding: 8px 16px;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}/*# sourceMappingURL=App.css.map */

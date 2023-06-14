@@ -1,3 +1,5 @@
+import AddRecipeForm from 'components/AddRecipeForm';
+
 import { db } from './firebase';
 
 import './assets/App.css';
@@ -5,7 +7,7 @@ import './assets/App.css';
 function App() {
   return (
     <main>
-      <h1>hello</h1>
+      <AddRecipeForm />
     </main>
   );
 }
