@@ -1,5 +1,5 @@
 export interface RecipeData {
-  id: number;
+  id: string;
   recipe_name: string;
   keywords: string[];
   extension: string;
@@ -10,9 +10,9 @@ export interface RecipeData {
   comments: CommentInterface[];
   description: string;
   date_posted: string;
-  prep_time: string;
-  cook_time: string;
-  total_time: string;
+  prep_time: number;
+  cook_time: number;
+  total_time: number;
   image: string;
   ingredients: string[];
   steps: {
