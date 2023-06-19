@@ -1,6 +1,11 @@
 import { useState, useReducer, useEffect, useRef } from 'react';
 
-import { convertString, capitalizeString } from 'functions/functions';
+import {
+  convertString,
+  capitalizeString,
+  removeExtraWhitespace,
+  scrollToElement,
+} from 'functions/functions';
 
 import { v4 as uuid } from 'uuid';
 
@@ -139,11 +144,6 @@ const AddRecipeForm = () => {
   const ingredientInputRef = useRef<HTMLInputElement>(null);
   const stepInputRef = useRef<HTMLInputElement>(null);
 
-  const handleRecipeNameChange = (value: string) => {
-    dispatch({ type: types.recipeName, payload: capitalizeString(value) });
-    dispatch({ type: types.extension, payload: convertString(value) });
-  };
-
   const handleRecipeTimeChange = (
     event: React.ChangeEvent<HTMLInputElement>,
     type: string
@@ -241,10 +241,93 @@ const AddRecipeForm = () => {
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (recipe_name === '')
-      setFormErrors({ ...formErrors, recipe_name: 'Recipes must have a name' });
+    const recipeNameRegex = /^([A-Za-z0-9 ]{1,30})$/;
+    const recipeDescriptionRegex = /^.{5,75}$/;
 
-    console.log(formData);
+    const validRecipeName = recipeNameRegex.test(recipe_name);
+    const validDescription = recipeDescriptionRegex.test(description);
+
+    if (recipe_name.trim() === '') {
+      setFormErrors((prevErrors) => ({
+        ...prevErrors,
+        recipe_name: 'Recipe name required.',
+      }));
+      scrollToElement('recipe-name-container');
+      return;
+    } else if (!validRecipeName) {
+      setFormErrors((prevErrors) => ({
+        ...prevErrors,
+        recipe_name:
+          'Recipe name must be between 3 and 30 characters with letters and numbers only.',
+      }));
+      scrollToElement('recipe-name-container');
+      return;
+    } else {
+      setFormErrors((prevErrors) => ({ ...prevErrors, recipe_name: '' }));
+      dispatch({
+        type: types.recipeName,
+        payload: removeExtraWhitespace(capitalizeString(recipe_name)),
+      });
+    }
+
+    if (description.trim() === '') {
+      setFormErrors((prevErrors) => ({
+        ...prevErrors,
+        description: 'Description required.',
+      }));
+      scrollToElement('recipe-description-container');
+
+      return;
+    } else if (!validDescription) {
+      setFormErrors((prevErrors) => ({
+        ...prevErrors,
+        description:
+          'Recipe description must be between 5 and 75 characters long.',
+      }));
+      scrollToElement('recipe-description-container');
+
+      return;
+    } else {
+      setFormErrors((prevErrors) => ({ ...prevErrors, description: '' }));
+      dispatch({
+        type: types.description,
+        payload: removeExtraWhitespace(description),
+      });
+    }
+
+    if (cook_time + prep_time === 0) {
+      setFormErrors((prevErrors) => ({
+        ...prevErrors,
+        total_time: 'Total time can not be 0.',
+      }));
+      scrollToElement('cook-time-container');
+
+      return;
+    } else {
+      setFormErrors((prevErrors) => ({ ...prevErrors, total_time: '' }));
+    }
+
+    if (categories.length === 0) {
+      setFormErrors((prevErrors) => ({
+        ...prevErrors,
+        categories: 'Please select at least 1 category.',
+      }));
+      scrollToElement('categories-container');
+
+      return;
+    } else {
+      setFormErrors((prevErrors) => ({ ...prevErrors, categories: '' }));
+    }
+
+    if (keywords.length < 3) {
+      setFormErrors((prevErrors) => ({
+        ...prevErrors,
+        keywords: 'Add at least 3 keywords.',
+      }));
+      scrollToElement('keywords-container');
+
+      return;
+    }
   };
 
   useEffect(() => {
@@ -258,38 +341,41 @@ const AddRecipeForm = () => {
     <form onSubmit={handleSubmit} className='add-recipe-form'>
       <h2>Add Recipe</h2>
 
-      <div className='form-group'>
-        <label htmlFor='recipe-name'>
-          Recipe Name{' '}
-          {formErrors.recipe_name === '' ? null : (
-            <span className='errors'>({formErrors.recipe_name})</span>
-          )}
-        </label>
+      <div className='form-group' id='recipe-name-container'>
+        <label htmlFor='recipe-name'>Recipe Name</label>
         <input
           type='text'
           id='recipe-name'
           name='recipe-name'
-          style={{
-            borderColor: formErrors.recipe_name !== '' ? 'red' : '',
-          }}
           value={recipe_name}
-          onChange={(e) => handleRecipeNameChange(e.target.value)}
+          onChange={(e) =>
+            dispatch({ type: types.recipeName, payload: e.target.value })
+          }
         />
+        {formErrors.recipe_name && (
+          <p className='error'>{formErrors.recipe_name}</p>
+        )}
       </div>
 
-      <div className='form-group'>
+      <div className='form-group' id='recipe-description-container'>
         <label htmlFor='recipe-description'>Recipe Description</label>
         <textarea
           id='recipe-description'
           rows={4}
           value={description}
           onChange={(e) =>
-            dispatch({ type: types.description, payload: e.target.value })
+            dispatch({
+              type: types.description,
+              payload: e.target.value,
+            })
           }
         ></textarea>
+        {formErrors.description && (
+          <p className='error'>{formErrors.description}</p>
+        )}
       </div>
 
-      <div className='cook-time'>
+      <div className='cook-time' id='cook-time-container'>
         <div className='form-group'>
           <label htmlFor='prep-time'>Prep Time (minutes)</label>
           <input
@@ -319,10 +405,13 @@ const AddRecipeForm = () => {
             value={cook_time + prep_time}
             readOnly
           />
+          {formErrors.total_time && (
+            <p className='error'>{formErrors.total_time}</p>
+          )}
         </div>
       </div>
 
-      <div className='form-group'>
+      <div className='form-group' id='categories-container'>
         <label>Categories</label>
         <div className='checkbox-group'>
           <label>
@@ -366,9 +455,12 @@ const AddRecipeForm = () => {
             Dessert
           </label>
         </div>
+        {formErrors.categories && (
+          <p className='error'>{formErrors.categories}</p>
+        )}
       </div>
 
-      <div className='form-group'>
+      <div className='form-group' id='image-container'>
         <label htmlFor='image'>
           Image (if no image available go{' '}
           <a href='https://unsplash.com/'>here</a> for an open source image)
@@ -381,7 +473,7 @@ const AddRecipeForm = () => {
         />
       </div>
 
-      <div className='form-group'>
+      <div className='form-group' id='keywords-container'>
         <label htmlFor='keywords'>
           Keywords (keywords are used for searching. ex. beef, baked, fried,
           etc)
@@ -407,9 +499,10 @@ const AddRecipeForm = () => {
         >
           Add Keyword
         </button>
+        {formErrors.keywords && <p className='error'>{formErrors.keywords}</p>}
       </div>
 
-      <div className='form-group'>
+      <div className='form-group' id='ingredients-container'>
         <label htmlFor='ingredients'>Ingredients</label>
         {ingredients.map((ingredient, index) => (
           <div key={index} className='input-group'>
@@ -434,7 +527,7 @@ const AddRecipeForm = () => {
         </button>
       </div>
 
-      <div className='form-group'>
+      <div className='form-group' id='steps-container'>
         <label htmlFor='steps'>Steps</label>
         {steps.map((step, index) => (
           <div key={index} className='input-group'>

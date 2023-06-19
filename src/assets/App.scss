@@ -1,3 +1,9 @@
+// * {
+//   margin: 0;
+//   padding: 0;
+//   box-sizing: border-box;
+// }
+
 .add-recipe-form {
   display: flex;
   flex-direction: column;
@@ -8,8 +14,9 @@
   border-radius: 4px;
   background-color: #f9f9f9;
 
-  .errors {
+  .error {
     color: red;
+    margin: 0;
   }
 
   h2 {
@@ -46,7 +53,7 @@
   .cook-time {
     display: flex;
     gap: 1rem;
-    width: 100%;
+    // width: 100%;
 
     input {
       width: 100%;
