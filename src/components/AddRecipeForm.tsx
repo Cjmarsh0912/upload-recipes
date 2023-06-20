@@ -17,19 +17,68 @@ type Action = {
 };
 
 type FormData = {
-  id: string;
+  recipe_name: {
+    name: string;
+    errorMessage: string;
+  };
+  description: {
+    description: string;
+    errorMessage: string;
+  };
+  categories: {
+    categories: string[];
+    errorMessage: string;
+  };
+  prep_time: {
+    prepTime: number;
+    errorMessage: string;
+  };
+  cook_time: {
+    cookTime: number;
+    errorMessage: string;
+  };
+  image: {
+    image: File;
+    errorMessage: string;
+  };
+  form_keywords: {
+    keywords: {
+      keyword: string;
+      hasError: boolean;
+    }[];
+    errorMessage: string;
+  };
+  form_ingredients: {
+    ingredients: {
+      ingredient: string;
+      hasError: boolean;
+    }[];
+    errorMessage: string;
+  };
+  form_steps: {
+    steps: {
+      header: string;
+      step: string;
+      hasError: boolean;
+    }[];
+    errorMessage: string;
+  };
+};
+
+type Errors = {
   recipe_name: string;
-  keywords: string[];
-  categories: string[];
+  keyword: boolean[];
+  keywords: string;
+  categories: string;
   description: string;
-  prep_time: number;
-  cook_time: number;
+  date_posted: string;
+  prep_time: string;
+  cook_time: string;
+  total_time: string;
   image: string;
-  ingredients: string[];
-  steps: {
-    header: string;
-    step: string;
-  }[];
+  ingredient: boolean[];
+  ingredients: string;
+  steps: string;
 };
 
 const initialValue: RecipeData = {
@@ -100,8 +149,9 @@ const reducer = (state: RecipeData, action: Action): RecipeData => {
 const AddRecipeForm = () => {
   const [formData, dispatch] = useReducer(reducer, initialValue);
   const [tempImage, setTempImage] = useState<File | null>(null);
-  const [formErrors, setFormErrors] = useState({
+  const [formErrors, setFormErrors] = useState<Errors>({
     recipe_name: '',
+    keyword: [],
     keywords: '',
     categories: '',
     description: '',
@@ -110,9 +160,11 @@ const AddRecipeForm = () => {
     cook_time: '',
     total_time: '',
     image: '',
+    ingredient: [],
     ingredients: '',
     steps: '',
   });
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const types = {
     recipeName: 'SET_RECIPE_NAME',
     description: 'SET_DESCRIPTION',
@@ -203,9 +255,14 @@ const AddRecipeForm = () => {
   };
 
   const handleKeywordRemove = (index: number) => {
+    const updatedErrors = [...formErrors.keyword];
+    updatedErrors.splice(index, 1);
+
     const updatedKeywords = [...keywords];
     updatedKeywords.splice(index, 1);
+
     dispatch({ type: types.keywords, payload: updatedKeywords });
+    setFormErrors((prevErrors) => ({ ...prevErrors, keyword: updatedErrors }));
   };
 
   const handleIngredientChange = (index: number, value: string) => {
@@ -215,9 +272,17 @@ const AddRecipeForm = () => {
   };
 
   const handleIngredientRemove = (index: number) => {
+    const updatedErrors = [...formErrors.ingredient];
+    updatedErrors.splice(index, 1);
+
     const updatedIngredients = [...ingredients];
     updatedIngredients.splice(index, 1);
+
     dispatch({ type: types.ingredients, payload: updatedIngredients });
+    setFormErrors((prevErrors) => ({
+      ...prevErrors,
+      ingredient: updatedErrors,
+    }));
   };
 
   const handleStepChange = (
@@ -236,13 +301,85 @@ const AddRecipeForm = () => {
     dispatch({ type: types.steps, payload: updatedSteps });
   };
 
-  const addRecipeToDatabase = (formData: RecipeData) => {};
+  const testForValidInput = (array: string[]) => {
+    const inputRegex = /^.{1,50}$/;
+    const isInputValid = array.every((input) => {
+      return inputRegex.test(input.trim());
+    });
+
+    return isInputValid;
+  };
+
+  const testForValidSteps = (array: { header: string; step: string }[]) => {
+    const headerRegex = /^[A-Za-z0-9\s]{5,50}$/;
+    const stepRegex = /^[A-Za-z0-9\s]{0,50}$/;
+
+    const isStepValid = array.every((step) => {
+      return (
+        headerRegex.test(step.header.trim()) && stepRegex.test(step.step.trim())
+      );
+    });
+
+    return isStepValid;
+  };
+
+  const addRecipeToDatabase = (formData: RecipeData) => {
+    console.log(formData);
+  };
+
+  const testKeywords = () => {
+    let isErrors: boolean = false;
+
+    const inputRegex = /^[A-Za-z\s]{1,50}$/;
+    let errors = [...formErrors.keyword];
+
+    keywords.forEach((item, index) => {
+      if (!inputRegex.test(item)) {
+        errors[index] = true;
+        isErrors = true;
+      } else {
+        errors[index] = false;
+      }
+    });
+
+    setFormErrors((prevErrors) => ({
+      ...prevErrors,
+      keyword: errors,
+      keywords:
+        'Keyword must be 1 to 50 characters with letters and spaces only',
+    }));
+    return isErrors;
+  };
+
+  const testIngredients = () => {
+    let isErrors: boolean = false;
+
+    const inputRegex = /^.{1,50}$/;
+    let errors = [...formErrors.ingredient];
+
+    ingredients.forEach((item, index) => {
+      if (!inputRegex.test(item)) {
+        errors[index] = true;
+        isErrors = true;
+      } else {
+        errors[index] = false;
+      }
+    });
+
+    setFormErrors((prevErrors) => ({
+      ...prevErrors,
+      ingredient: errors,
+      ingredients: 'Ingredients must be 1 to 50 characters.',
+    }));
+    return isErrors;
+  };
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    // setIsLoading(true);
 
-    const recipeNameRegex = /^([A-Za-z0-9 ]{1,30})$/;
-    const recipeDescriptionRegex = /^.{5,75}$/;
+    const recipeNameRegex = /^([A-Za-z0-9 ]{3,50})$/;
+    const recipeDescriptionRegex = /^.{5,100}$/;
 
     const validRecipeName = recipeNameRegex.test(recipe_name);
     const validDescription = recipeDescriptionRegex.test(description);
@@ -258,7 +395,7 @@ const AddRecipeForm = () => {
       setFormErrors((prevErrors) => ({
         ...prevErrors,
         recipe_name:
-          'Recipe name must be between 3 and 30 characters with letters and numbers only.',
+          'Recipe name must be between 3 and 50 characters with letters and numbers only.',
       }));
       scrollToElement('recipe-name-container');
       return;
@@ -282,7 +419,7 @@ const AddRecipeForm = () => {
       setFormErrors((prevErrors) => ({
         ...prevErrors,
         description:
-          'Recipe description must be between 5 and 75 characters long.',
+          'Recipe description must be between 5 and 100 characters long.',
       }));
       scrollToElement('recipe-description-container');
 
@@ -319,15 +456,144 @@ const AddRecipeForm = () => {
       setFormErrors((prevErrors) => ({ ...prevErrors, categories: '' }));
     }
 
+    if (!tempImage?.name) {
+      setFormErrors((prevErrors) => ({
+        ...prevErrors,
+        image: 'No image selected',
+      }));
+      return;
+    }
+
     if (keywords.length < 3) {
       setFormErrors((prevErrors) => ({
         ...prevErrors,
         keywords: 'Add at least 3 keywords.',
       }));
-      scrollToElement('keywords-container');
 
       return;
+    } else if (testKeywords()) {
+      return;
+    } else {
+      let errors = [...formErrors.keyword].map((item) => {
+        return false;
+      });
+
+      setFormErrors((prevErrors) => ({
+        ...prevErrors,
+        keywords: '',
+        keyword: errors,
+      }));
+
+      const newKeywords = [...keywords].map((keyword) => {
+        return removeExtraWhitespace(keyword.toLowerCase());
+      });
+
+      dispatch({ type: types.keywords, payload: newKeywords });
     }
+
+    if (ingredients.length < 2) {
+      setFormErrors((prevErrors) => ({
+        ...prevErrors,
+        ingredients: 'Add at least 2 ingredients.',
+      }));
+
+      return;
+    } else if (testIngredients()) {
+      return;
+    } else {
+      let errors = [...formErrors.ingredient].map((item) => {
+        return false;
+      });
+
+      setFormErrors((prevErrors) => ({
+        ...prevErrors,
+        ingredients: '',
+        ingredient: errors,
+      }));
+
+      const newIngredients = [...ingredients].map((ingredient) => {
+        return removeExtraWhitespace(ingredient.toLowerCase());
+      });
+
+      dispatch({ type: types.keywords, payload: newIngredients });
+    }
+    // if (keywords.length < 3) {
+    //   setFormErrors((prevErrors) => ({
+    //     ...prevErrors,
+    //     keywords: 'Add at least 3 keywords.',
+    //   }));
+
+    //   return;
+    // } else if (!testForValidInput(keywords)) {
+    //   setFormErrors((prevErrors) => ({
+    //     ...prevErrors,
+    //     keywords: 'Keywords must be between 1 and 50 characters.',
+    //   }));
+
+    //   return;
+    // } else {
+    //   setFormErrors((prevErrors) => ({ ...prevErrors, keywords: '' }));
+
+    //   const newKeywords = [...keywords].map((keyword) => {
+    //     return removeExtraWhitespace(keyword.toLowerCase());
+    //   });
+
+    //   dispatch({ type: types.keywords, payload: newKeywords });
+    // }
+
+    // if (ingredients.length < 2) {
+    //   setFormErrors((prevErrors) => ({
+    //     ...prevErrors,
+    //     ingredients: 'Add at least 2 ingredients.',
+    //   }));
+
+    //   return;
+    // } else if (!testForValidInput(ingredients)) {
+    //   setFormErrors((prevErrors) => ({
+    //     ...prevErrors,
+    //     ingredients: 'Ingredients must be between 1 and 50 characters.',
+    //   }));
+
+    //   return;
+    // } else {
+    //   setFormErrors((prevErrors) => ({ ...prevErrors, ingredients: '' }));
+
+    //   const newIngredients = [...ingredients].map((ingredient) => {
+    //     return removeExtraWhitespace(ingredient.toLowerCase());
+    //   });
+
+    //   dispatch({ type: types.ingredients, payload: newIngredients });
+    // }
+
+    if (steps.length < 1) {
+      setFormErrors((prevErrors) => ({
+        ...prevErrors,
+        steps: 'Add at least 1 step.',
+      }));
+
+      return;
+    } else if (!testForValidSteps(steps)) {
+      setFormErrors((prevErrors) => ({
+        ...prevErrors,
+        steps:
+          'Steps must be between 5 and 50 characters with numbers and letters only.',
+      }));
+
+      return;
+    } else {
+      setFormErrors((prevErrors) => ({ ...prevErrors, steps: '' }));
+
+      const newSteps = [...steps].map((steps) => {
+        return {
+          header: removeExtraWhitespace(steps.header),
+          step: removeExtraWhitespace(steps.step),
+        };
+      });
+
+      dispatch({ type: types.steps, payload: newSteps });
+    }
+
+    addRecipeToDatabase(formData);
   };
 
   useEffect(() => {
@@ -347,6 +613,7 @@ const AddRecipeForm = () => {
           type='text'
           id='recipe-name'
           name='recipe-name'
+          autoFocus
           value={recipe_name}
           onChange={(e) =>
             dispatch({ type: types.recipeName, payload: e.target.value })
@@ -465,12 +732,20 @@ const AddRecipeForm = () => {
           Image (if no image available go{' '}
           <a href='https://unsplash.com/'>here</a> for an open source image)
         </label>
-        <input
-          accept='image/*'
-          type='file'
-          id='image'
-          onChange={(e) => handleFileChange(e)}
-        />
+        <label className='custom-file-upload'>
+          <input
+            accept='image/png, image/jpeg'
+            type='file'
+            id='image'
+            onChange={(e) => handleFileChange(e)}
+          />
+          Choose Image
+        </label>
+        {tempImage?.name ? (
+          <p>{tempImage?.name}</p>
+        ) : (
+          <p className='error'>{formErrors.image}</p>
+        )}
       </div>
 
       <div className='form-group' id='keywords-container'>
@@ -479,17 +754,22 @@ const AddRecipeForm = () => {
           etc)
         </label>
         {[...keywords].map((keyword, index) => (
-          <div key={index} className='input-group'>
-            <input
-              type='text'
-              value={keyword}
-              ref={keywordInputRef}
-              onChange={(e) => handleKeywordChange(index, e.target.value)}
-            />
-            <button type='button' onClick={() => handleKeywordRemove(index)}>
-              Remove
-            </button>
-          </div>
+          <>
+            <div key={index} className='input-group'>
+              <input
+                type='text'
+                value={keyword}
+                ref={keywordInputRef}
+                className={
+                  formErrors.keyword[index] === true ? 'has-errors' : ''
+                }
+                onChange={(e) => handleKeywordChange(index, e.target.value)}
+              />
+              <button type='button' onClick={() => handleKeywordRemove(index)}>
+                Remove
+              </button>
+            </div>
+          </>
         ))}
         <button
           type='button'
@@ -508,6 +788,9 @@ const AddRecipeForm = () => {
           <div key={index} className='input-group'>
             <input
               type='text'
+              className={
+                formErrors.ingredient[index] === true ? 'has-errors' : ''
+              }
               ref={ingredientInputRef}
               value={ingredient}
               onChange={(e) => handleIngredientChange(index, e.target.value)}
@@ -525,6 +808,9 @@ const AddRecipeForm = () => {
         >
           Add Ingredient
         </button>
+        {formErrors.ingredients && (
+          <p className='error'>{formErrors.ingredients}</p>
+        )}
       </div>
 
       <div className='form-group' id='steps-container'>
@@ -567,9 +853,10 @@ const AddRecipeForm = () => {
         >
           Add Step
         </button>
+        {formErrors.steps && <p className='error'>{formErrors.steps}</p>}
       </div>
 
-      <button type='submit'>Submit</button>
+      <input type='submit' value='Submit' disabled={isLoading} />
     </form>
   );
 };
