@@ -120,6 +120,14 @@
     }
   }
 
+  .button-group {
+    display: flex;
+
+    & > * {
+      flex: 1;
+    }
+  }
+
   input[type='submit'] {
     position: relative;
     padding: 8px 16px;
