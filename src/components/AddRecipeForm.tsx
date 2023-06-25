@@ -9,8 +9,10 @@ import {
 
 import { v4 as uuid } from 'uuid';
 
-import { ref, uploadBytes } from 'firebase/storage';
-import { storage } from 'firebase';
+import { setDoc, doc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { storage } from '../firebase';
+import { db } from '../firebase';
 
 import { RecipeData } from 'interfaces/interface';
 
@@ -107,6 +109,7 @@ const reducer = (state: FormData, action: Action): FormData => {
 
 const AddRecipeForm = () => {
   const [formData, dispatch] = useReducer(reducer, initialValue);
+  const [imgLocation, setImgLocation] = useState<string>('');
   const [formErrors, setFormErrors] = useState<Errors>({
     recipe_name: '',
     keywords: '',
@@ -179,8 +182,10 @@ const AddRecipeForm = () => {
 
     if (file && file.type.startsWith('image/')) {
       dispatch({ type: types.image, payload: file });
+      setImgLocation(`images/${file.name + uuid()}`);
     } else {
       dispatch({ type: types.image, payload: null });
+      setImgLocation('');
     }
   };
 
@@ -351,7 +356,21 @@ const AddRecipeForm = () => {
     return fixSteps;
   };
 
-  const addRecipeToDatabase = (formData: FormData) => {
+  const uploadImage = async () => {
+    if (image === null) return;
+
+    const imageRef = ref(storage, imgLocation);
+    await uploadBytes(imageRef, image);
+    const imgUrl = await getDownloadURL(imageRef);
+
+    return imgUrl;
+  };
+
+  const addRecipeToDatabase = async (formData: FormData) => {
+    const imgUrl = await uploadImage();
+
+    if (imgUrl === undefined) return;
+
     const newRecipeName = removeExtraWhitespace(capitalizeString(recipe_name));
 
     const newDescription = removeExtraWhitespace(description);
@@ -373,7 +392,7 @@ const AddRecipeForm = () => {
       cook_time: cook_time,
       total_time: cook_time + prep_time,
       categories: newCategories,
-      image: '',
+      image: imgUrl,
       keywords: fixKeywordFormat(),
       ingredients: fixIngredientFormat(),
       steps: fixStepsFormat(),
@@ -384,7 +403,12 @@ const AddRecipeForm = () => {
       extension: convertString(newRecipeName),
     };
 
-    console.log(Recipe);
+    const docRef = doc(db, 'Recipes', Recipe.recipe_name);
+    await setDoc(docRef, {
+      ...Recipe,
+    });
+
+    alert('PLEASE WOOOORK');
   };
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
