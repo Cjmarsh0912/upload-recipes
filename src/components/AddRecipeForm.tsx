@@ -286,8 +286,8 @@ const AddRecipeForm = () => {
   };
 
   const testSteps = () => {
-    const headerRegex = /^[A-Za-z0-9\s]{5,50}$/;
-    const stepRegex = /^[A-Za-z0-9\s]{0,50}$/;
+    const headerRegex = /^.{5,1000}$/;
+    const stepRegex = /^.{0,1000}$/;
 
     const newSteps = [...steps].map((step) => {
       if (
@@ -330,8 +330,12 @@ const AddRecipeForm = () => {
   };
 
   const fixKeywordFormat = () => {
-    const fixKeywords = [...keywords].map((keyword) => {
-      return removeExtraWhitespace(keyword.keyword.toLowerCase());
+    const getKeywords = [...keywords].map((keyword) => {
+      return keyword.keyword;
+    });
+
+    const fixKeywords = [...categories, ...getKeywords].map((keyword) => {
+      return removeExtraWhitespace(keyword.toLowerCase());
     });
 
     return fixKeywords;
@@ -367,6 +371,7 @@ const AddRecipeForm = () => {
   };
 
   const addRecipeToDatabase = async (formData: FormData) => {
+    setIsLoading(true);
     const imgUrl = await uploadImage();
 
     if (imgUrl === undefined) return;
@@ -408,7 +413,22 @@ const AddRecipeForm = () => {
       ...Recipe,
     });
 
-    alert('PLEASE WOOOORK');
+    alert('Added recipe to database.');
+    setIsLoading(false);
+    dispatch({ type: 'RESET', payload: null });
+    setFormErrors({
+      recipe_name: '',
+      keywords: '',
+      categories: '',
+      description: '',
+      date_posted: '',
+      prep_time: '',
+      cook_time: '',
+      total_time: '',
+      image: '',
+      ingredients: '',
+      steps: '',
+    });
   };
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -563,8 +583,7 @@ const AddRecipeForm = () => {
     } else if (testSteps()) {
       setFormErrors((prevErrors) => ({
         ...prevErrors,
-        steps:
-          'Step header must be between 5 and 50 characters with numbers and letters only.',
+        steps: 'Step header must be between 5 and 1000 characters.',
       }));
 
       return;
@@ -585,281 +604,304 @@ const AddRecipeForm = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className='add-recipe-form'>
-      <h2>Add Recipe</h2>
-
-      <div className='form-group' id='recipe-name-container'>
-        <label htmlFor='recipe-name'>Recipe Name</label>
-        <input
-          type='text'
-          id='recipe-name'
-          name='recipe-name'
-          autoFocus
-          value={recipe_name}
-          onChange={(e) =>
-            dispatch({ type: types.recipeName, payload: e.target.value })
-          }
-        />
-        {formErrors.recipe_name && (
-          <p className='error'>{formErrors.recipe_name}</p>
-        )}
-      </div>
-
-      <div className='form-group' id='recipe-description-container'>
-        <label htmlFor='recipe-description'>Recipe Description</label>
-        <textarea
-          id='recipe-description'
-          rows={4}
-          value={description}
-          onChange={(e) =>
-            dispatch({
-              type: types.description,
-              payload: e.target.value,
-            })
-          }
-        ></textarea>
-        {formErrors.description && (
-          <p className='error'>{formErrors.description}</p>
-        )}
-      </div>
-
-      <div className='cook-time' id='cook-time-container'>
-        <div className='form-group'>
-          <label htmlFor='prep-time'>Prep Time (minutes)</label>
-          <input
-            type='number'
-            id='prep-time'
-            min={0}
-            value={prep_time}
-            onChange={(e) => handleRecipeTimeChange(e, types.prepTime)}
-          />
+    <>
+      {isLoading ? (
+        <div className='loading'>
+          <h1 data-text='Loading...'>Loading...</h1>
         </div>
-        <div className='form-group'>
-          <label htmlFor='cook-time'>Cook Time (minutes)</label>
-          <input
-            type='number'
-            id='cook-time'
-            min={0}
-            value={cook_time}
-            onChange={(e) => handleRecipeTimeChange(e, types.cookTime)}
-          />
-        </div>
-        <div className='form-group'>
-          <label htmlFor='total-time'>Total Time (minutes)</label>
-          <input
-            type='number'
-            id='total-time'
-            min={0}
-            value={cook_time + prep_time}
-            readOnly
-          />
-          {formErrors.total_time && (
-            <p className='error'>{formErrors.total_time}</p>
-          )}
-        </div>
-      </div>
+      ) : (
+        <form onSubmit={handleSubmit} className='add-recipe-form'>
+          <h2>Add Recipe</h2>
 
-      <div className='form-group' id='categories-container'>
-        <label>Categories</label>
-        <div className='checkbox-group'>
-          <label>
-            <input
-              type='checkbox'
-              name='categories'
-              value='Lunch'
-              checked={categories.includes('Lunch')}
-              onChange={() => handleCategoryChange('Lunch')}
-            />
-            Lunch
-          </label>
-          <label>
-            <input
-              type='checkbox'
-              name='categories'
-              value='Dinner'
-              checked={categories.includes('Dinner')}
-              onChange={() => handleCategoryChange('Dinner')}
-            />
-            Dinner
-          </label>
-          <label>
-            <input
-              type='checkbox'
-              name='categories'
-              value='Sides'
-              checked={categories.includes('Sides')}
-              onChange={() => handleCategoryChange('Sides')}
-            />
-            Sides
-          </label>
-          <label>
-            <input
-              type='checkbox'
-              name='categories'
-              value='Dessert'
-              checked={categories.includes('Dessert')}
-              onChange={() => handleCategoryChange('Dessert')}
-            />
-            Dessert
-          </label>
-        </div>
-        {formErrors.categories && (
-          <p className='error'>{formErrors.categories}</p>
-        )}
-      </div>
-
-      <div className='form-group' id='image-container'>
-        <label htmlFor='image'>
-          Image (if no image available go{' '}
-          <a href='https://unsplash.com/'>here</a> for an open source image)
-        </label>
-        <label className='custom-file-upload'>
-          <input
-            accept='image/png, image/jpeg'
-            type='file'
-            id='image'
-            onChange={(e) => handleFileChange(e)}
-          />
-          Choose Image
-        </label>
-        {image?.name ? (
-          <p>{image?.name}</p>
-        ) : (
-          <p className='error'>{formErrors.image}</p>
-        )}
-      </div>
-
-      <div className='form-group' id='keywords-container'>
-        <label htmlFor='keywords'>
-          Keywords (keywords are used for searching. ex. beef, baked, fried,
-          etc)
-        </label>
-        {[...keywords].map((keyword, index) => (
-          <>
-            <div key={index} className='input-group'>
-              <input
-                type='text'
-                value={keyword.keyword}
-                ref={keywordInputRef}
-                className={keyword.hasError ? 'has-errors' : ''}
-                onChange={(e) => handleKeywordChange(index, e.target.value)}
-              />
-              <button type='button' onClick={() => handleKeywordRemove(index)}>
-                Remove
-              </button>
-            </div>
-          </>
-        ))}
-        <button
-          type='button'
-          onClick={() => {
-            dispatch({
-              type: types.keywords,
-              payload: [...keywords, { keyword: '', hasError: false }],
-            });
-
-            setTimeout(() => {
-              if (keywordInputRef.current) {
-                keywordInputRef.current.focus();
-              }
-            }, 0);
-          }}
-        >
-          Add Keyword
-        </button>
-        {formErrors.keywords && <p className='error'>{formErrors.keywords}</p>}
-      </div>
-
-      <div className='form-group' id='ingredients-container'>
-        <label htmlFor='ingredients'>Ingredients</label>
-        {ingredients.map((ingredient, index) => (
-          <div key={index} className='input-group'>
+          <div className='form-group' id='recipe-name-container'>
+            <label htmlFor='recipe-name'>Recipe Name</label>
             <input
               type='text'
-              className={ingredient.hasError ? 'has-errors' : ''}
-              ref={ingredientInputRef}
-              value={ingredient.ingredient}
-              onChange={(e) => handleIngredientChange(index, e.target.value)}
-            />
-            <button type='button' onClick={() => handleIngredientRemove(index)}>
-              Remove
-            </button>
-          </div>
-        ))}
-        <button
-          type='button'
-          onClick={() => {
-            dispatch({
-              type: types.ingredients,
-              payload: [...ingredients, { ingredient: '', hasError: false }],
-            });
-
-            setTimeout(() => {
-              if (ingredientInputRef.current) {
-                ingredientInputRef.current.focus();
-              }
-            }, 0);
-          }}
-        >
-          Add Ingredient
-        </button>
-        {formErrors.ingredients && (
-          <p className='error'>{formErrors.ingredients}</p>
-        )}
-      </div>
-
-      <div className='form-group' id='steps-container'>
-        <label htmlFor='steps'>Steps</label>
-        {steps.map((step, index) => (
-          <div key={index} className='input-group'>
-            <input
-              type='text'
-              placeholder='Header (required)'
-              className={step.hasError ? 'has-errors' : ''}
-              ref={stepInputRef}
-              value={step.header}
+              id='recipe-name'
+              name='recipe-name'
+              autoFocus
+              value={recipe_name}
               onChange={(e) =>
-                handleStepChange(index, 'header', e.target.value)
+                dispatch({ type: types.recipeName, payload: e.target.value })
               }
             />
-            <input
-              type='text'
-              placeholder='Step'
-              className={step.hasError ? 'has-errors' : ''}
-              value={step.step}
-              onChange={(e) => handleStepChange(index, 'step', e.target.value)}
-            />
-            <button type='button' onClick={() => handleStepRemove(index)}>
-              Remove
+            {formErrors.recipe_name && (
+              <p className='error'>{formErrors.recipe_name}</p>
+            )}
+          </div>
+
+          <div className='form-group' id='recipe-description-container'>
+            <label htmlFor='recipe-description'>Recipe Description</label>
+            <textarea
+              id='recipe-description'
+              rows={4}
+              value={description}
+              onChange={(e) =>
+                dispatch({
+                  type: types.description,
+                  payload: e.target.value,
+                })
+              }
+            ></textarea>
+            {formErrors.description && (
+              <p className='error'>{formErrors.description}</p>
+            )}
+          </div>
+
+          <div className='cook-time' id='cook-time-container'>
+            <div className='form-group'>
+              <label htmlFor='prep-time'>Prep Time (minutes)</label>
+              <input
+                type='number'
+                id='prep-time'
+                min={0}
+                value={prep_time}
+                onChange={(e) => handleRecipeTimeChange(e, types.prepTime)}
+              />
+            </div>
+            <div className='form-group'>
+              <label htmlFor='cook-time'>Cook Time (minutes)</label>
+              <input
+                type='number'
+                id='cook-time'
+                min={0}
+                value={cook_time}
+                onChange={(e) => handleRecipeTimeChange(e, types.cookTime)}
+              />
+            </div>
+            <div className='form-group'>
+              <label htmlFor='total-time'>Total Time (minutes)</label>
+              <input
+                type='number'
+                id='total-time'
+                min={0}
+                value={cook_time + prep_time}
+                readOnly
+              />
+              {formErrors.total_time && (
+                <p className='error'>{formErrors.total_time}</p>
+              )}
+            </div>
+          </div>
+
+          <div className='form-group' id='categories-container'>
+            <label>Categories</label>
+            <div className='checkbox-group'>
+              <label>
+                <input
+                  type='checkbox'
+                  name='categories'
+                  value='Lunch'
+                  checked={categories.includes('Lunch')}
+                  onChange={() => handleCategoryChange('Lunch')}
+                />
+                Lunch
+              </label>
+              <label>
+                <input
+                  type='checkbox'
+                  name='categories'
+                  value='Dinner'
+                  checked={categories.includes('Dinner')}
+                  onChange={() => handleCategoryChange('Dinner')}
+                />
+                Dinner
+              </label>
+              <label>
+                <input
+                  type='checkbox'
+                  name='categories'
+                  value='Sides'
+                  checked={categories.includes('Sides')}
+                  onChange={() => handleCategoryChange('Sides')}
+                />
+                Sides
+              </label>
+              <label>
+                <input
+                  type='checkbox'
+                  name='categories'
+                  value='Dessert'
+                  checked={categories.includes('Dessert')}
+                  onChange={() => handleCategoryChange('Dessert')}
+                />
+                Dessert
+              </label>
+            </div>
+            {formErrors.categories && (
+              <p className='error'>{formErrors.categories}</p>
+            )}
+          </div>
+
+          <div className='form-group' id='image-container'>
+            <label htmlFor='image'>
+              Image (if no image available go{' '}
+              <a href='https://unsplash.com/'>here</a> for an open source image)
+            </label>
+            <label className='custom-file-upload'>
+              <input
+                accept='image/png, image/jpeg'
+                type='file'
+                id='image'
+                onChange={(e) => handleFileChange(e)}
+              />
+              Choose Image
+            </label>
+            {image?.name ? (
+              <p>{image?.name}</p>
+            ) : (
+              <p className='error'>{formErrors.image}</p>
+            )}
+          </div>
+
+          <div className='form-group' id='keywords-container'>
+            <label htmlFor='keywords'>
+              Keywords (keywords are used for searching. ex. beef, baked, fried,
+              etc)
+            </label>
+            {[...keywords].map((keyword, index) => (
+              <>
+                <div key={index} className='input-group'>
+                  <input
+                    type='text'
+                    value={keyword.keyword}
+                    ref={keywordInputRef}
+                    className={keyword.hasError ? 'has-errors' : ''}
+                    onChange={(e) => handleKeywordChange(index, e.target.value)}
+                  />
+                  <button
+                    type='button'
+                    onClick={() => handleKeywordRemove(index)}
+                  >
+                    Remove
+                  </button>
+                </div>
+              </>
+            ))}
+            <button
+              type='button'
+              onClick={() => {
+                dispatch({
+                  type: types.keywords,
+                  payload: [...keywords, { keyword: '', hasError: false }],
+                });
+
+                setTimeout(() => {
+                  if (keywordInputRef.current) {
+                    keywordInputRef.current.focus();
+                  }
+                }, 0);
+              }}
+            >
+              Add Keyword
+            </button>
+            {formErrors.keywords && (
+              <p className='error'>{formErrors.keywords}</p>
+            )}
+          </div>
+
+          <div className='form-group' id='ingredients-container'>
+            <label htmlFor='ingredients'>Ingredients</label>
+            {ingredients.map((ingredient, index) => (
+              <div key={index} className='input-group'>
+                <input
+                  type='text'
+                  className={ingredient.hasError ? 'has-errors' : ''}
+                  ref={ingredientInputRef}
+                  value={ingredient.ingredient}
+                  onChange={(e) =>
+                    handleIngredientChange(index, e.target.value)
+                  }
+                />
+                <button
+                  type='button'
+                  onClick={() => handleIngredientRemove(index)}
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+            <button
+              type='button'
+              onClick={() => {
+                dispatch({
+                  type: types.ingredients,
+                  payload: [
+                    ...ingredients,
+                    { ingredient: '', hasError: false },
+                  ],
+                });
+
+                setTimeout(() => {
+                  if (ingredientInputRef.current) {
+                    ingredientInputRef.current.focus();
+                  }
+                }, 0);
+              }}
+            >
+              Add Ingredient
+            </button>
+            {formErrors.ingredients && (
+              <p className='error'>{formErrors.ingredients}</p>
+            )}
+          </div>
+
+          <div className='form-group' id='steps-container'>
+            <label htmlFor='steps'>Steps</label>
+            {steps.map((step, index) => (
+              <div key={index} className='input-group'>
+                <input
+                  type='text'
+                  placeholder='Header (required)'
+                  className={step.hasError ? 'has-errors' : ''}
+                  ref={stepInputRef}
+                  value={step.header}
+                  onChange={(e) =>
+                    handleStepChange(index, 'header', e.target.value)
+                  }
+                />
+                <input
+                  type='text'
+                  placeholder='Step'
+                  className={step.hasError ? 'has-errors' : ''}
+                  value={step.step}
+                  onChange={(e) =>
+                    handleStepChange(index, 'step', e.target.value)
+                  }
+                />
+                <button type='button' onClick={() => handleStepRemove(index)}>
+                  Remove
+                </button>
+              </div>
+            ))}
+            <button
+              type='button'
+              onClick={() => {
+                dispatch({
+                  type: types.steps,
+                  payload: [...steps, { header: '', step: '' }],
+                });
+                setTimeout(() => {
+                  if (stepInputRef.current) {
+                    stepInputRef.current.focus();
+                  }
+                }, 0);
+              }}
+            >
+              Add Step
+            </button>
+            {formErrors.steps && <p className='error'>{formErrors.steps}</p>}
+          </div>
+
+          <div className='button-group'>
+            <input type='submit' value='Submit' />
+            <button onClick={resetForm} type='button'>
+              Reset
             </button>
           </div>
-        ))}
-        <button
-          type='button'
-          onClick={() => {
-            dispatch({
-              type: types.steps,
-              payload: [...steps, { header: '', step: '' }],
-            });
-            setTimeout(() => {
-              if (stepInputRef.current) {
-                stepInputRef.current.focus();
-              }
-            }, 0);
-          }}
-        >
-          Add Step
-        </button>
-        {formErrors.steps && <p className='error'>{formErrors.steps}</p>}
-      </div>
-
-      <div className='button-group'>
-        <input type='submit' value='Submit' disabled={isLoading} />
-        <button onClick={resetForm} type='button'>
-          Reset
-        </button>
-      </div>
-    </form>
+        </form>
+      )}
+    </>
   );
 };
 

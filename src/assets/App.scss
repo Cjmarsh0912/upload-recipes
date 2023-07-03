@@ -215,3 +215,45 @@
     }
   }
 }
+
+// Loading animation
+
+.loading {
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  h1 {
+    position: relative;
+    color: #333;
+    font-size: 4rem;
+    letter-spacing: 5px;
+    border-bottom: 16px solid #333;
+    line-height: 1.4;
+    text-transform: uppercase;
+
+    &::before {
+      content: attr(data-text);
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      color: dodgerblue;
+      border-bottom: 16px solid dodgerblue;
+      animation: lod 2s linear infinite;
+      overflow: hidden;
+    }
+  }
+}
+
+@keyframes lod {
+  0% {
+    width: 0;
+  }
+
+  100% {
+    width: 100%;
+  }
+}
